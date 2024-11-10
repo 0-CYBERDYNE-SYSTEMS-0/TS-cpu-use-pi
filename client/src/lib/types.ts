@@ -31,3 +31,24 @@ export interface SystemConfig {
   temperature: number;
   maxTokens: number;
 }
+
+export interface ToolStats {
+  toolName: string;
+  totalExecutions: number;
+  successfulExecutions: number;
+  failedExecutions: number;
+  avgExecutionTimeMs: number;
+  lastExecutedAt: string;
+  enabled: boolean;
+}
+
+export interface ToolExecution {
+  id: number;
+  toolName: string;
+  parameters: Record<string, any>;
+  status: 'success' | 'error' | 'pending';
+  result?: any;
+  error?: string;
+  executionTimeMs: number;
+  createdAt: string;
+}

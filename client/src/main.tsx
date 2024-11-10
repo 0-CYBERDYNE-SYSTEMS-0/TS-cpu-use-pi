@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { ChatPage } from "./pages/ChatPage";
 import { ToolsPage } from "./pages/ToolsPage";
 import { ConfigPage } from "./pages/ConfigPage";
+import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { wsClient } from "./lib/websocket";
 import { ConnectionStatus } from "@/components/ui/connection-status";
 
@@ -29,6 +30,9 @@ createRoot(document.getElementById("root")!).render(
             <Link href="/config" className="text-sm font-medium">
               Config
             </Link>
+            <Link href="/analytics" className="text-sm font-medium">
+              Analytics
+            </Link>
           </div>
         </nav>
         
@@ -36,6 +40,7 @@ createRoot(document.getElementById("root")!).render(
           <Route path="/" component={ChatPage} />
           <Route path="/tools" component={ToolsPage} />
           <Route path="/config" component={ConfigPage} />
+          <Route path="/analytics" component={AnalyticsPage} />
           <Route>404 Page Not Found</Route>
         </Switch>
       </div>

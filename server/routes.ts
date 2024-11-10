@@ -6,6 +6,7 @@ import { Tool } from "../client/src/lib/types";
 import { fileSystemTool } from "./tools/fileSystem";
 import { systemControlTool } from "./tools/systemControl";
 import { claudeClient } from "./lib/claude";
+import { analyticsService } from './lib/analytics';
 
 const tools: Tool[] = [fileSystemTool, systemControlTool];
 let systemConfig = {
@@ -178,6 +179,32 @@ export function registerRoutes(app: Express, server: Server) {
       res.json(systemConfig);
     } catch (error) {
       res.status(500).json({ error: "Failed to update config" });
+    }
+  });
+
+  // Analytics endpoints
+  app.get("/api/analytics/stats", async (req, res) => {
+    try {
+      const stats = await analyticsService.getToolStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Analytics stats error:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to fetch analytics stats" 
+      });
+    }
+  });
+
+  app.get("/api/analytics/executions", async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+      const executions = await analyticsService.getRecentExecutions(limit);
+      res.json(executions);
+    } catch (error) {
+      console.error('Analytics executions error:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to fetch execution history" 
+      });
     }
   });
 }

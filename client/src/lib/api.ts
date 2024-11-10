@@ -1,4 +1,4 @@
-import { Message, Tool, SystemConfig } from './types';
+import { Message, Tool, SystemConfig, ToolStats, ToolExecution } from './types';
 
 const API_BASE = '/api';
 
@@ -41,5 +41,15 @@ export async function updateSystemConfig(config: Partial<SystemConfig>) {
 
 export async function getMessageHistory(): Promise<Message[]> {
   const response = await fetch(`${API_BASE}/messages`);
+  return response.json();
+}
+
+export async function getToolStats(): Promise<ToolStats[]> {
+  const response = await fetch(`${API_BASE}/analytics/stats`);
+  return response.json();
+}
+
+export async function getToolExecutions(): Promise<ToolExecution[]> {
+  const response = await fetch(`${API_BASE}/analytics/executions`);
   return response.json();
 }
