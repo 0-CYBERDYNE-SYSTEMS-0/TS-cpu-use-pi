@@ -9,6 +9,7 @@ import { ChatPage } from "./pages/ChatPage";
 import { ToolsPage } from "./pages/ToolsPage";
 import { ConfigPage } from "./pages/ConfigPage";
 import { wsClient } from "./lib/websocket";
+import { ConnectionStatus } from "@/components/ui/connection-status";
 
 // Initialize WebSocket connection
 wsClient.connect();
@@ -38,6 +39,7 @@ createRoot(document.getElementById("root")!).render(
           <Route>404 Page Not Found</Route>
         </Switch>
       </div>
+      <ConnectionStatus />
       <Toaster />
     </SWRConfig>
   </StrictMode>
