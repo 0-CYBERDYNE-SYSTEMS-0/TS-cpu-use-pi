@@ -47,3 +47,30 @@ export async function executeToolCall(name: string, args: Record<string, any>) {
     }
   }
 }
+
+async function seedToolExecutions() {
+  const operations = [
+    { name: 'fileSystem', args: { operation: 'list', path: '.' } },
+    { name: 'systemControl', args: { command: 'ps' } },
+    // Error cases
+    { name: 'fileSystem', args: { operation: 'read', path: '/nonexistent' } },
+    { name: 'systemControl', args: { command: 'invalid' } }
+  ];
+
+  console.log('Seeding tool executions...');
+  for (const op of operations) {
+    try {
+      console.log(`Executing ${op.name} with args:`, op.args);
+      await executeToolCall(op.name, op.args);
+    } catch (error) {
+      console.error(`Error executing ${op.name}:`, error);
+      // Continue with next operation even if this one fails
+    }
+  }
+  console.log('Tool execution seeding completed');
+}
+
+// Call seedToolExecutions when the module is loaded
+seedToolExecutions().catch(error => {
+  console.error('Failed to seed tool executions:', error);
+});
