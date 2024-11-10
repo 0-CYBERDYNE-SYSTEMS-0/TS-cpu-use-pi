@@ -9,7 +9,7 @@ const anthropic = new Anthropic({
 });
 
 interface ConversationContext {
-  messages: Array<{ role: string; content: string; }>;
+  messages: Anthropic.MessageParam[];
   lastToolCalls?: ToolCall[];
 }
 
@@ -19,7 +19,7 @@ class ClaudeClient {
 
   async sendMessage(content: string, config: any): Promise<Message> {
     try {
-      const contextId = 'default'; // For now using a single context
+      const contextId = 'default';
       const context = this.getOrCreateContext(contextId);
       
       const message: Message = {
@@ -43,6 +43,10 @@ class ClaudeClient {
         systemPrompt += `\nRecent tool results:\n${toolResults}`;
       }
 
+      // Parse tool calls from previous assistant messages
+      const toolCallPattern = /<tool>(\w+):(\{.*?\})<\/tool>/g;
+      let toolCalls: ToolCall[] = [];
+
       const response = await anthropic.messages.create({
         model: 'claude-3-5-sonnet-20241022',
         max_tokens: config.maxTokens,
@@ -51,38 +55,53 @@ class ClaudeClient {
         messages: context.messages
       });
 
-      if (!response.content[0]?.text) {
-        throw new Error('Invalid response from Claude API');
-      }
+      const responseContent = response.content[0].type === 'text' 
+        ? response.content[0].text 
+        : '';
 
       const assistantMessage: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: response.content[0].text,
+        content: responseContent,
         timestamp: Date.now()
       };
 
-      // Handle tool calls if present
-      if (response.content[0].tool_calls) {
+      // Extract tool calls from the response
+      let match;
+      while ((match = toolCallPattern.exec(responseContent)) !== null) {
+        const [_, name, argsString] = match;
+        try {
+          const args = JSON.parse(argsString);
+          const toolCall: ToolCall = {
+            id: crypto.randomUUID(),
+            name,
+            args,
+            status: 'pending'
+          };
+          toolCalls.push(toolCall);
+        } catch (error) {
+          console.error('Failed to parse tool call:', error);
+        }
+      }
+
+      // Execute tool calls if present
+      if (toolCalls.length > 0) {
         assistantMessage.toolCalls = await Promise.all(
-          response.content[0].tool_calls.map(async (toolCall) => {
-            const call = {
-              id: toolCall.id,
-              name: toolCall.name,
-              args: toolCall.arguments,
-              status: 'pending' as const
-            };
-
+          toolCalls.map(async (toolCall) => {
             try {
-              const result = await executeToolCall(toolCall.name, toolCall.arguments);
-              call.status = 'success';
-              call.result = result;
+              const result = await executeToolCall(toolCall.name, toolCall.args);
+              return {
+                ...toolCall,
+                status: 'success' as const,
+                result
+              };
             } catch (error) {
-              call.status = 'error';
-              call.result = error instanceof Error ? error.message : 'Unknown error occurred';
+              return {
+                ...toolCall,
+                status: 'error' as const,
+                result: error instanceof Error ? error.message : 'Unknown error occurred'
+              };
             }
-
-            return call;
           })
         );
 
@@ -93,7 +112,7 @@ class ClaudeClient {
       // Update context with assistant's response
       context.messages.push({ 
         role: 'assistant', 
-        content: assistantMessage.content 
+        content: responseContent 
       });
 
       this.messages.push(assistantMessage);
@@ -125,6 +144,7 @@ class ClaudeClient {
 
   clearContext(contextId: string = 'default') {
     this.contexts.delete(contextId);
+    this.messages = [];
   }
 }
 

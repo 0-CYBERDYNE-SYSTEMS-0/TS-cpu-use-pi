@@ -1,17 +1,19 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send } from 'lucide-react';
+import { Send, Loader2 } from 'lucide-react';
 import { sendMessage } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { mutate } from 'swr';
+import useSWR from 'swr';
 
 export function ChatInput() {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { data: messages = [] } = useSWR('/api/messages');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -38,12 +40,22 @@ export function ChatInput() {
     }
   }
 
+  // Check if assistant is typing (when last message is from user)
+  const isAssistantTyping = sending && messages.length > 0 && 
+    messages[messages.length - 1]?.role === 'user';
+
   return (
     <div className="space-y-2">
       {error && (
         <Alert variant="destructive" className="mx-4">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
+      )}
+      {isAssistantTyping && (
+        <div className="flex items-center gap-2 px-4 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Assistant is typing...
+        </div>
       )}
       <form onSubmit={handleSubmit} className="flex gap-2 p-4 border-t">
         <Textarea
@@ -59,7 +71,11 @@ export function ChatInput() {
           size="icon"
           className={sending ? 'opacity-50 cursor-not-allowed' : ''}
         >
-          <Send className={`h-4 w-4 ${sending ? 'animate-pulse' : ''}`} />
+          {sending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Send className="h-4 w-4" />
+          )}
         </Button>
       </form>
     </div>
