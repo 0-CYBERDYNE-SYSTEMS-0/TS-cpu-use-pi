@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { WebSocketServer } from 'ws';
+import { Server } from 'http';
 import { handleWebSocket } from './websocket';
 import { Tool } from '../client/src/lib/types';
 import { fileSystemTool } from './tools/fileSystem';
@@ -13,17 +14,19 @@ let systemConfig = {
   maxTokens: 2048
 };
 
-export function registerRoutes(app: Express) {
-  // Initialize WebSocket server
+export function registerRoutes(app: Express, server: Server) {
+  // Initialize WebSocket server with noServer option
   const wss = new WebSocketServer({ noServer: true });
-  app.get('/ws', (req, res) => {
-    if (!req.upgrade) {
-      res.status(426).send('Upgrade Required');
-      return;
+  
+  // Handle upgrade requests
+  server.on('upgrade', (request, socket, head) => {
+    if (request.url === '/ws') {
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        handleWebSocket(ws);
+      });
+    } else {
+      socket.destroy();
     }
-    wss.handleUpgrade(req, req.socket, Buffer.alloc(0), (ws) => {
-      handleWebSocket(ws);
-    });
   });
 
   // Chat endpoints

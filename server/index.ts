@@ -8,8 +8,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 (async () => {
-  registerRoutes(app);
   const server = createServer(app);
+  registerRoutes(app, server);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
