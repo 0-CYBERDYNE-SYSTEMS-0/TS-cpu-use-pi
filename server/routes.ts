@@ -10,6 +10,7 @@ import { analyticsService } from './lib/analytics';
 import { db } from "../db";
 import { toolPermissions } from "../db/schema";
 import { eq } from "drizzle-orm";
+import { setUserRole, checkToolAccess } from './middleware/auth';
 
 const tools: Tool[] = [fileSystemTool, systemControlTool];
 let systemConfig = {
@@ -65,6 +66,9 @@ function validateToolDefinition(tool: Partial<Tool>): { valid: boolean; error?: 
 }
 
 export function registerRoutes(app: Express, server: Server) {
+  // Apply user role middleware globally
+  app.use(setUserRole());
+
   const wss = new WebSocketServer({ noServer: true });
 
   server.on("upgrade", (request, socket, head) => {
@@ -121,7 +125,7 @@ export function registerRoutes(app: Express, server: Server) {
     }
   });
 
-  app.post("/api/tools", async (req, res) => {
+  app.post("/api/tools", checkToolAccess('canModify'), async (req, res) => {
     try {
       const toolData = req.body;
       
@@ -178,7 +182,7 @@ export function registerRoutes(app: Express, server: Server) {
     }
   });
 
-  app.patch("/api/tools/:name", (req, res) => {
+  app.patch("/api/tools/:name", checkToolAccess('canModify'), (req, res) => {
     try {
       const { name } = req.params;
       const { enabled } = req.body;
@@ -196,7 +200,7 @@ export function registerRoutes(app: Express, server: Server) {
     }
   });
 
-  app.put("/api/tools/:name/permissions", async (req, res) => {
+  app.put("/api/tools/:name/permissions", checkToolAccess('canModify'), async (req, res) => {
     try {
       const { name } = req.params;
       const { permissions } = req.body;

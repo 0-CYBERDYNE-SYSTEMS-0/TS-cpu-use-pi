@@ -1,15 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-  SheetFooter,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Settings, Loader2 } from 'lucide-react';
+import { Settings, Loader2, AlertTriangle } from 'lucide-react';
 import { Tool, ToolPermission } from '@/lib/types';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -50,24 +50,55 @@ export function ToolPermissions({ tool }: ToolPermissionsProps) {
     }))
   );
 
+  // Validate permissions on change
+  const validatePermissions = (perms: ToolPermission[]): string | null => {
+    // Check if at least one role has execution permission
+    const hasExecutePermission = perms.some(p => p.canExecute);
+    if (!hasExecutePermission) {
+      return 'At least one role must have execution permission';
+    }
+
+    // Ensure admin role has all permissions
+    const adminPerms = perms.find(p => p.role === 'admin');
+    if (!adminPerms?.canExecute || !adminPerms?.canModify || !adminPerms?.canDelete) {
+      return 'Admin role must maintain full permissions';
+    }
+
+    return null;
+  };
+
   const handlePermissionChange = (
     role: string,
     field: keyof Omit<ToolPermission, 'toolName' | 'role'>,
     value: boolean
   ) => {
     setError(null);
-    setPermissions(prev =>
-      prev.map(p =>
-        p.role === role
-          ? { ...p, [field]: value }
-          : p
-      )
+    const updatedPermissions = permissions.map(p =>
+      p.role === role ? { ...p, [field]: value } : p
     );
+
+    // Validate the changes
+    const validationError = validatePermissions(updatedPermissions);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setPermissions(updatedPermissions);
   };
 
   const handleSave = async () => {
     setError(null);
     setIsSaving(true);
+
+    // Final validation before saving
+    const validationError = validatePermissions(permissions);
+    if (validationError) {
+      setError(validationError);
+      setIsSaving(false);
+      return;
+    }
+
     try {
       await updateToolPermissions(tool.name, permissions);
       toast({
@@ -89,9 +120,25 @@ export function ToolPermissions({ tool }: ToolPermissionsProps) {
     }
   };
 
+  // Reset form when dialog is closed
+  useEffect(() => {
+    if (!isOpen) {
+      setPermissions(
+        tool.permissions || DEFAULT_ROLES.map(role => ({
+          toolName: tool.name,
+          role,
+          canExecute: role === 'admin',
+          canModify: role === 'admin',
+          canDelete: role === 'admin'
+        }))
+      );
+      setError(null);
+    }
+  }, [isOpen, tool]);
+
   return (
-    <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      <SheetTrigger asChild>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
         <Button 
           variant="outline" 
           size="sm" 
@@ -101,23 +148,24 @@ export function ToolPermissions({ tool }: ToolPermissionsProps) {
           <Settings className="h-4 w-4" />
           <span>Permissions</span>
         </Button>
-      </SheetTrigger>
-      <SheetContent>
-        <SheetHeader>
-          <SheetTitle>Tool Permissions - {tool.name}</SheetTitle>
-          <SheetDescription>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Tool Permissions - {tool.name}</DialogTitle>
+          <DialogDescription>
             Manage access permissions for different user roles.
             Configure who can execute, modify, or delete this tool.
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
 
         {error && (
-          <Alert variant="destructive" className="mt-4">
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
-        <div className="mt-6 space-y-6">
+        <div className="space-y-6">
           {permissions.map(({ role, canExecute, canModify, canDelete }) => (
             <div key={role} className="space-y-4">
               <TooltipProvider>
@@ -142,6 +190,7 @@ export function ToolPermissions({ tool }: ToolPermissionsProps) {
                       onCheckedChange={(checked) => 
                         handlePermissionChange(role, 'canExecute', checked as boolean)
                       }
+                      disabled={role === 'admin'} // Admin must maintain execute permission
                       aria-label={`Allow ${role} to execute tool`}
                     />
                     <Tooltip>
@@ -166,6 +215,7 @@ export function ToolPermissions({ tool }: ToolPermissionsProps) {
                       onCheckedChange={(checked) =>
                         handlePermissionChange(role, 'canModify', checked as boolean)
                       }
+                      disabled={role === 'admin'} // Admin must maintain modify permission
                       aria-label={`Allow ${role} to modify tool settings`}
                     />
                     <Tooltip>
@@ -190,6 +240,7 @@ export function ToolPermissions({ tool }: ToolPermissionsProps) {
                       onCheckedChange={(checked) =>
                         handlePermissionChange(role, 'canDelete', checked as boolean)
                       }
+                      disabled={role === 'admin'} // Admin must maintain delete permission
                       aria-label={`Allow ${role} to delete tool`}
                     />
                     <Tooltip>
@@ -212,10 +263,10 @@ export function ToolPermissions({ tool }: ToolPermissionsProps) {
           ))}
         </div>
 
-        <SheetFooter className="mt-6">
+        <DialogFooter>
           <Button 
             onClick={handleSave} 
-            disabled={isSaving}
+            disabled={isSaving || !!error}
             className="w-full"
           >
             {isSaving ? (
@@ -227,8 +278,8 @@ export function ToolPermissions({ tool }: ToolPermissionsProps) {
               'Save Permissions'
             )}
           </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

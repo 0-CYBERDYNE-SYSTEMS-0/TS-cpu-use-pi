@@ -2,16 +2,23 @@ import { Tool } from '../../client/src/lib/types';
 import { fileSystemTool } from './fileSystem';
 import { systemControlTool } from './systemControl';
 import { analyticsService } from '../lib/analytics';
+import { checkToolPermission } from '../middleware/auth';
 
 export const tools: Tool[] = [
   fileSystemTool,
   systemControlTool
 ];
 
-export async function executeToolCall(name: string, args: Record<string, any>) {
+export async function executeToolCall(name: string, args: Record<string, any>, userRole: string = 'user') {
   const tool = tools.find(t => t.name === name);
   if (!tool || !tool.enabled) {
     throw new Error(`Tool "${name}" not found or disabled`);
+  }
+
+  // Check execution permission
+  const hasPermission = await checkToolPermission(name, userRole, 'canExecute');
+  if (!hasPermission) {
+    throw new Error(`Unauthorized: You don't have permission to execute this tool`);
   }
 
   const startTime = Date.now();

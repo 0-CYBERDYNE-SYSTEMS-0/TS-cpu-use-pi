@@ -40,24 +40,7 @@ export function ToolCard({ tool }: ToolCardProps) {
         <div className="flex items-center justify-between">
           <CardTitle>{tool.name}</CardTitle>
           <div className="flex items-center gap-3">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-2"
-                    aria-label="Manage tool permissions"
-                  >
-                    <Settings className="h-4 w-4" />
-                    <span>Permissions</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Manage tool permissions and access controls</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <ToolPermissions tool={tool} />
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
