@@ -1,4 +1,4 @@
-import { Message, Tool, SystemConfig, ToolStats, ToolExecution } from './types';
+import { Message, Tool, SystemConfig, ToolStats, ToolExecution, ToolPermission } from './types';
 
 const API_BASE = '/api';
 
@@ -22,6 +22,21 @@ export async function updateTool(name: string, enabled: boolean) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ enabled })
   });
+  return response.json();
+}
+
+export async function updateToolPermissions(toolName: string, permissions: ToolPermission[]) {
+  const response = await fetch(`${API_BASE}/tools/${toolName}/permissions`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ permissions })
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to update permissions');
+  }
+  
   return response.json();
 }
 

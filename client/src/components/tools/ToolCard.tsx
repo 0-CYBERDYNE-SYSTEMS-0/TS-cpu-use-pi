@@ -4,6 +4,7 @@ import { Switch } from '@/components/ui/switch';
 import { updateTool } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { mutate } from 'swr';
+import { ToolPermissions } from './ToolPermissions';
 
 interface ToolCardProps {
   tool: Tool;
@@ -30,10 +31,13 @@ export function ToolCard({ tool }: ToolCardProps) {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>{tool.name}</CardTitle>
-          <Switch
-            checked={tool.enabled}
-            onCheckedChange={handleToggle}
-          />
+          <div className="flex items-center gap-2">
+            <ToolPermissions tool={tool} />
+            <Switch
+              checked={tool.enabled}
+              onCheckedChange={handleToggle}
+            />
+          </div>
         </div>
         <CardDescription>{tool.description}</CardDescription>
       </CardHeader>

@@ -2,11 +2,14 @@ import type { Express } from "express";
 import { WebSocketServer } from "ws";
 import { Server } from "http";
 import { handleWebSocket } from "./websocket";
-import { Tool } from "../client/src/lib/types";
+import { Tool, ToolPermission } from "../client/src/lib/types";
 import { fileSystemTool } from "./tools/fileSystem";
 import { systemControlTool } from "./tools/systemControl";
 import { claudeClient } from "./lib/claude";
 import { analyticsService } from './lib/analytics';
+import { db } from "../db";
+import { toolPermissions } from "../db/schema";
+import { eq } from "drizzle-orm";
 
 const tools: Tool[] = [fileSystemTool, systemControlTool];
 let systemConfig = {
@@ -30,6 +33,17 @@ Always validate inputs and handle errors gracefully.`,
   maxTokens: 2048,
 };
 
+async function getToolPermissions(toolName: string): Promise<ToolPermission[]> {
+  const perms = await db.select().from(toolPermissions).where(eq(toolPermissions.toolName, toolName));
+  return perms.map(p => ({
+    toolName: p.toolName,
+    role: p.role,
+    canExecute: p.canExecute,
+    canModify: p.canModify,
+    canDelete: p.canDelete
+  }));
+}
+
 function validateToolDefinition(tool: Partial<Tool>): { valid: boolean; error?: string } {
   if (!tool.name || typeof tool.name !== 'string') {
     return { valid: false, error: 'Tool name is required and must be a string' };
@@ -51,10 +65,8 @@ function validateToolDefinition(tool: Partial<Tool>): { valid: boolean; error?: 
 }
 
 export function registerRoutes(app: Express, server: Server) {
-  // Initialize WebSocket server with noServer option
   const wss = new WebSocketServer({ noServer: true });
 
-  // Handle upgrade requests
   server.on("upgrade", (request, socket, head) => {
     if (request.url === "/ws") {
       wss.handleUpgrade(request, socket, head, (ws) => {
@@ -95,32 +107,35 @@ export function registerRoutes(app: Express, server: Server) {
   });
 
   // Tool management endpoints
-  app.get("/api/tools", (req, res) => {
+  app.get("/api/tools", async (req, res) => {
     try {
-      res.json(tools);
+      const toolsWithPermissions = await Promise.all(
+        tools.map(async (tool) => ({
+          ...tool,
+          permissions: await getToolPermissions(tool.name)
+        }))
+      );
+      res.json(toolsWithPermissions);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch tools" });
     }
   });
 
-  app.post("/api/tools", (req, res) => {
+  app.post("/api/tools", async (req, res) => {
     try {
       const toolData = req.body;
       
-      // Validate tool definition
       const validation = validateToolDefinition(toolData);
       if (!validation.valid) {
         res.status(400).json({ error: validation.error });
         return;
       }
 
-      // Check for duplicate tool name
       if (tools.find(t => t.name === toolData.name)) {
         res.status(409).json({ error: "Tool with this name already exists" });
         return;
       }
 
-      // Create the tool with default implementation
       const newTool: Tool = {
         name: toolData.name,
         description: toolData.description,
@@ -128,9 +143,26 @@ export function registerRoutes(app: Express, server: Server) {
         enabled: true
       };
 
+      // Add default permissions for the new tool
+      await db.insert(toolPermissions).values([
+        {
+          toolName: newTool.name,
+          role: 'admin',
+          canExecute: true,
+          canModify: true,
+          canDelete: true
+        },
+        {
+          toolName: newTool.name,
+          role: 'user',
+          canExecute: true,
+          canModify: false,
+          canDelete: false
+        }
+      ]);
+
       tools.push(newTool);
       
-      // Update system message to include the new tool
       const toolDescription = `- ${newTool.name}: ${newTool.description}`;
       systemConfig.systemMessage = systemConfig.systemMessage.replace(
         "Available tools:",
@@ -161,6 +193,43 @@ export function registerRoutes(app: Express, server: Server) {
       res.json(tool);
     } catch (error) {
       res.status(500).json({ error: "Failed to update tool" });
+    }
+  });
+
+  app.put("/api/tools/:name/permissions", async (req, res) => {
+    try {
+      const { name } = req.params;
+      const { permissions } = req.body;
+
+      const tool = tools.find((t) => t.name === name);
+      if (!tool) {
+        res.status(404).json({ error: "Tool not found" });
+        return;
+      }
+
+      // Update permissions in database
+      await db.transaction(async (tx) => {
+        // Delete existing permissions
+        await tx.delete(toolPermissions)
+          .where(eq(toolPermissions.toolName, name));
+
+        // Insert new permissions
+        await tx.insert(toolPermissions)
+          .values(permissions.map((p: ToolPermission) => ({
+            toolName: name,
+            role: p.role,
+            canExecute: p.canExecute,
+            canModify: p.canModify,
+            canDelete: p.canDelete
+          })));
+      });
+
+      res.json({ message: "Permissions updated successfully" });
+    } catch (error) {
+      console.error('Update permissions error:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to update permissions" 
+      });
     }
   });
 

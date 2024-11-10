@@ -14,6 +14,14 @@ export interface ToolCall {
   result?: any;
 }
 
+export interface ToolPermission {
+  toolName: string;
+  role: string;
+  canExecute: boolean;
+  canModify: boolean;
+  canDelete: boolean;
+}
+
 export interface Tool {
   name: string;
   description: string;
@@ -23,6 +31,7 @@ export interface Tool {
     enum?: string[];
   }>;
   enabled: boolean;
+  permissions?: ToolPermission[];
   execute?: (args: Record<string, any>) => Promise<any>;
 }
 
