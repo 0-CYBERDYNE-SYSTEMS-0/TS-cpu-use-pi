@@ -29,6 +29,26 @@ Always validate inputs and handle errors gracefully.`,
   maxTokens: 2048,
 };
 
+function validateToolDefinition(tool: Partial<Tool>): { valid: boolean; error?: string } {
+  if (!tool.name || typeof tool.name !== 'string') {
+    return { valid: false, error: 'Tool name is required and must be a string' };
+  }
+  if (!tool.description || typeof tool.description !== 'string') {
+    return { valid: false, error: 'Tool description is required and must be a string' };
+  }
+  if (!tool.parameters || typeof tool.parameters !== 'object') {
+    return { valid: false, error: 'Tool parameters must be an object' };
+  }
+
+  for (const [key, param] of Object.entries(tool.parameters)) {
+    if (!param.type || !['string', 'number', 'boolean'].includes(param.type)) {
+      return { valid: false, error: `Invalid parameter type for ${key}` };
+    }
+  }
+
+  return { valid: true };
+}
+
 export function registerRoutes(app: Express, server: Server) {
   // Initialize WebSocket server with noServer option
   const wss = new WebSocketServer({ noServer: true });
@@ -79,6 +99,49 @@ export function registerRoutes(app: Express, server: Server) {
       res.json(tools);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch tools" });
+    }
+  });
+
+  app.post("/api/tools", (req, res) => {
+    try {
+      const toolData = req.body;
+      
+      // Validate tool definition
+      const validation = validateToolDefinition(toolData);
+      if (!validation.valid) {
+        res.status(400).json({ error: validation.error });
+        return;
+      }
+
+      // Check for duplicate tool name
+      if (tools.find(t => t.name === toolData.name)) {
+        res.status(409).json({ error: "Tool with this name already exists" });
+        return;
+      }
+
+      // Create the tool with default implementation
+      const newTool: Tool = {
+        name: toolData.name,
+        description: toolData.description,
+        parameters: toolData.parameters,
+        enabled: true
+      };
+
+      tools.push(newTool);
+      
+      // Update system message to include the new tool
+      const toolDescription = `- ${newTool.name}: ${newTool.description}`;
+      systemConfig.systemMessage = systemConfig.systemMessage.replace(
+        "Available tools:",
+        `Available tools:\n${toolDescription}`
+      );
+
+      res.status(201).json(newTool);
+    } catch (error) {
+      console.error('Create tool error:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to create tool" 
+      });
     }
   });
 

@@ -17,8 +17,13 @@ export interface ToolCall {
 export interface Tool {
   name: string;
   description: string;
-  parameters: Record<string, any>;
+  parameters: Record<string, {
+    type: string;
+    optional?: boolean;
+    enum?: string[];
+  }>;
   enabled: boolean;
+  execute?: (args: Record<string, any>) => Promise<any>;
 }
 
 export interface SystemConfig {
