@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -14,7 +14,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, MinusCircle } from 'lucide-react';
+import { PlusCircle, MinusCircle, Loader2 } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -25,15 +25,20 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from '@/hooks/use-toast';
 import { mutate } from 'swr';
+import { Tool } from '@/lib/types';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const parameterSchema = z.object({
-  name: z.string().min(1, 'Parameter name is required'),
+  name: z.string()
+    .min(1, 'Parameter name is required')
+    .regex(/^[a-zA-Z][a-zA-Z0-9]*$/, 'Parameter name must start with a letter and contain only letters and numbers'),
   type: z.enum(['string', 'number', 'boolean']),
   optional: z.boolean().default(false),
 });
 
 const toolSchema = z.object({
-  name: z.string().min(1, 'Tool name is required')
+  name: z.string()
+    .min(1, 'Tool name is required')
     .regex(/^[a-zA-Z][a-zA-Z0-9]*$/, 'Tool name must start with a letter and contain only letters and numbers'),
   description: z.string().min(1, 'Description is required'),
   parameters: z.array(parameterSchema).min(1, 'At least one parameter is required'),
@@ -43,59 +48,98 @@ type ToolFormValues = z.infer<typeof toolSchema>;
 
 interface CreateToolFormProps {
   onSuccess?: () => void;
+  onFormChange?: (hasChanges: boolean) => void;
+  existingTools: Tool[];
 }
 
-export function CreateToolForm({ onSuccess }: CreateToolFormProps) {
+export function CreateToolForm({ onSuccess, onFormChange, existingTools }: CreateToolFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<ToolFormValues>({
     resolver: zodResolver(toolSchema),
     defaultValues: {
       name: '',
       description: '',
-      parameters: [{ name: '', type: 'string', optional: false }],
+      parameters: [{ name: '', type: 'string' as const, optional: false }],
     },
   });
 
-  async function onSubmit(data: ToolFormValues) {
+  // Watch for form changes
+  useEffect(() => {
+    const subscription = form.watch(() => {
+      onFormChange?.(form.formState.isDirty);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, onFormChange]);
+
+  const onSubmit = async (data: ToolFormValues) => {
     if (isSubmitting) return;
+    
+    // Check for duplicate tool name
+    if (existingTools.some(tool => tool.name === data.name)) {
+      form.setError('name', {
+        type: 'manual',
+        message: 'A tool with this name already exists'
+      });
+      return;
+    }
+
     setIsSubmitting(true);
+    setError(null);
 
     try {
       const response = await fetch('/api/tools', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          parameters: data.parameters.reduce((acc, param) => ({
+            ...acc,
+            [param.name]: {
+              type: param.type,
+              optional: param.optional
+            }
+          }), {})
+        }),
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to create tool');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create tool');
       }
 
       toast({
         title: 'Success',
-        description: 'Tool created successfully',
+        description: 'Tool created successfully'
       });
 
       form.reset();
       mutate('/api/tools');
       onSuccess?.();
-    } catch (error) {
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create tool';
+      setError(errorMessage);
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to create tool',
-        variant: 'destructive',
+        description: errorMessage,
+        variant: 'destructive'
       });
     } finally {
       setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
         <FormField
           control={form.control}
           name="name"
@@ -138,10 +182,10 @@ export function CreateToolForm({ onSuccess }: CreateToolFormProps) {
               variant="outline"
               size="sm"
               onClick={() => {
-                const current = form.getValues('parameters');
+                const parameters = form.getValues('parameters');
                 form.setValue('parameters', [
-                  ...current,
-                  { name: '', type: 'string', optional: false },
+                  ...parameters,
+                  { name: '', type: 'string' as const, optional: false }
                 ]);
               }}
             >
@@ -157,7 +201,9 @@ export function CreateToolForm({ onSuccess }: CreateToolFormProps) {
                 name={`parameters.${index}.name`}
                 render={({ field }) => (
                   <FormItem className="flex-1">
-                    <FormLabel className={index !== 0 ? 'sr-only' : ''}>Name</FormLabel>
+                    <FormLabel className={index !== 0 ? 'sr-only' : ''}>
+                      Parameter Name
+                    </FormLabel>
                     <FormControl>
                       <Input {...field} placeholder="parameterName" />
                     </FormControl>
@@ -171,7 +217,9 @@ export function CreateToolForm({ onSuccess }: CreateToolFormProps) {
                 name={`parameters.${index}.type`}
                 render={({ field }) => (
                   <FormItem className="flex-1">
-                    <FormLabel className={index !== 0 ? 'sr-only' : ''}>Type</FormLabel>
+                    <FormLabel className={index !== 0 ? 'sr-only' : ''}>
+                      Type
+                    </FormLabel>
                     <Select
                       value={field.value}
                       onValueChange={field.onChange}
@@ -218,10 +266,10 @@ export function CreateToolForm({ onSuccess }: CreateToolFormProps) {
                   variant="ghost"
                   size="icon"
                   onClick={() => {
-                    const current = form.getValues('parameters');
+                    const parameters = form.getValues('parameters');
                     form.setValue(
                       'parameters',
-                      current.filter((_, i) => i !== index)
+                      parameters.filter((_, i) => i !== index)
                     );
                   }}
                 >
@@ -232,8 +280,15 @@ export function CreateToolForm({ onSuccess }: CreateToolFormProps) {
           ))}
         </div>
 
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Creating...' : 'Create Tool'}
+        <Button type="submit" disabled={isSubmitting} className="w-full">
+          {isSubmitting ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Creating Tool...
+            </>
+          ) : (
+            'Create Tool'
+          )}
         </Button>
       </form>
     </Form>
