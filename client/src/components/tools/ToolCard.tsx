@@ -5,6 +5,14 @@ import { updateTool } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { mutate } from 'swr';
 import { ToolPermissions } from './ToolPermissions';
+import { Settings } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface ToolCardProps {
   tool: Tool;
@@ -31,12 +39,39 @@ export function ToolCard({ tool }: ToolCardProps) {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>{tool.name}</CardTitle>
-          <div className="flex items-center gap-2">
-            <ToolPermissions tool={tool} />
-            <Switch
-              checked={tool.enabled}
-              onCheckedChange={handleToggle}
-            />
+          <div className="flex items-center gap-3">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                    aria-label="Manage tool permissions"
+                  >
+                    <Settings className="h-4 w-4" />
+                    <span>Permissions</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Manage tool permissions and access controls</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Switch
+                    checked={tool.enabled}
+                    onCheckedChange={handleToggle}
+                    aria-label={`${tool.enabled ? 'Disable' : 'Enable'} ${tool.name} tool`}
+                  />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{tool.enabled ? 'Disable' : 'Enable'} tool</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
         <CardDescription>{tool.description}</CardDescription>
