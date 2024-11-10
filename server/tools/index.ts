@@ -11,30 +11,39 @@ export const tools: Tool[] = [
 export async function executeToolCall(name: string, args: Record<string, any>) {
   const tool = tools.find(t => t.name === name);
   if (!tool || !tool.enabled) {
-    throw new Error('Tool not found or disabled');
+    throw new Error(`Tool "${name}" not found or disabled`);
   }
 
   const startTime = Date.now();
+  let toolCall;
+
   try {
     const result = await tool.execute(args);
-    const toolCall = {
+    toolCall = {
       id: crypto.randomUUID(),
       name,
       args,
       status: 'success' as const,
       result
     };
-    await analyticsService.trackToolExecution(toolCall, startTime);
     return result;
   } catch (error) {
-    const toolCall = {
+    toolCall = {
       id: crypto.randomUUID(),
       name,
       args,
       status: 'error' as const,
       result: error instanceof Error ? error.message : 'Unknown error occurred'
     };
-    await analyticsService.trackToolExecution(toolCall, startTime);
     throw error;
+  } finally {
+    if (toolCall) {
+      try {
+        await analyticsService.trackToolExecution(toolCall, startTime);
+      } catch (analyticsError) {
+        console.error('Failed to track tool execution:', analyticsError);
+        // Don't throw here to avoid affecting the main execution flow
+      }
+    }
   }
 }
