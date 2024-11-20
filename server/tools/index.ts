@@ -2,9 +2,7 @@ import type { Tool } from '../../client/src/lib/types';
 import { analyticsService } from '../lib/analytics';
 import { checkToolPermission } from '../middleware/auth';
 import { getAllTools, findTool, registerTool } from './loader';
-import { fileSystemTool } from './fileSystem';
-import { systemControlTool } from './systemControl';
-import { computerControlTool } from './computerControl';
+import { anthropicComputerTool } from './anthropicComputer';
 
 // Initialize tools array
 const tools: Tool[] = [];
@@ -12,16 +10,9 @@ const tools: Tool[] = [];
 // Register tools
 function initializeTools() {
   try {
-    registerTool(fileSystemTool);
-    registerTool(systemControlTool);
-    registerTool(computerControlTool);
-    
-    // Update tools array with registered tools
-    const registeredTools = getAllTools();
-    tools.length = 0; // Clear existing array
-    tools.push(...registeredTools);
+    registerTool(anthropicComputerTool);
   } catch (error) {
-    console.error('Failed to register tools:', error);
+    console.error('Failed to register Anthropic computer tool:', error);
   }
 }
 

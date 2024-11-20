@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic } from "./vite";
 import { createServer } from "http";
 import { seedToolExecutions } from "./tools";
+import { WebSocketServer } from 'ws';
 
 const app = express();
 
@@ -32,6 +33,15 @@ app.use((req, res, next) => {
   next();
 });
 
+// Update CORS and security headers
+app.use((req, res, next) => {
+  // Allow iframe embedding from Replit domains
+  res.header('X-Frame-Options', 'ALLOW-FROM https://*.replit.dev');
+  // Set Content Security Policy
+  res.header('Content-Security-Policy', "frame-ancestors 'self' https://*.replit.dev");
+  next();
+});
+
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
   // Don't exit the process, just log the error
@@ -45,6 +55,8 @@ process.on('unhandledRejection', (err) => {
 (async () => {
   try {
     const server = createServer(app);
+    
+    
     
     // Setup routes before Vite middleware
     registerRoutes(app, server);
@@ -68,7 +80,7 @@ process.on('unhandledRejection', (err) => {
     }
 
     // Server startup
-    const PORT = process.env.PORT || 5000;
+    const PORT = parseInt(process.env.PORT || '5000', 10);
     const HOST = '0.0.0.0';
 
     await new Promise<void>((resolve, reject) => {

@@ -1,5 +1,5 @@
 import { Tool } from '../../client/src/lib/types';
-import { anthropic } from '../lib/claude';
+import { anthropic, defaultTools } from '../lib/claude';
 
 const anthropicComputerTool: Tool = {
   name: 'computer',
@@ -27,18 +27,12 @@ const anthropicComputerTool: Tool = {
           role: 'user',
           content: action
         }],
-        tools: [{
-          type: 'computer_20241022',
-          name: 'computer',
-          display_width_px: 1024,
-          display_height_px: 768,
-          display_number: 1
-        }]
+        tools: defaultTools
       });
 
       return response.content[0].text;
     } catch (error) {
-      throw new Error(`Computer action failed: ${error.message}`);
+      throw new Error(`Computer action failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 };

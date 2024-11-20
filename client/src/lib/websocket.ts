@@ -17,7 +17,11 @@ class WebSocketClient {
     if (this.ws?.readyState === WebSocket.OPEN) return;
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    this.ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+    const host = window.location.host;
+    const wsUrl = `${protocol}//${host}/ws`;
+
+    console.log('Connecting to WebSocket:', wsUrl);
+    this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {
       this.connected = true;
@@ -89,4 +93,5 @@ class WebSocketClient {
   }
 }
 
+export { WebSocketClient };
 export const wsClient = new WebSocketClient();
