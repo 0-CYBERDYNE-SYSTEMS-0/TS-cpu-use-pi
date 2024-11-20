@@ -3,7 +3,6 @@ import { Message, ToolCall } from '../../client/src/lib/types';
 import { broadcastMessage } from '../websocket';
 import { executeToolCall } from '../tools';
 
-// the newest Anthropic model is "claude-3-5-sonnet-20241022" which was released October 22, 2024
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
@@ -48,7 +47,7 @@ class ClaudeClient {
       let toolCalls: ToolCall[] = [];
 
       const response = await anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-2.1',
         max_tokens: config.maxTokens,
         temperature: config.temperature,
         system: systemPrompt,

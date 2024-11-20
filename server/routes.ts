@@ -5,6 +5,7 @@ import { handleWebSocket } from "./websocket";
 import { Tool, ToolPermission } from "../client/src/lib/types";
 import { fileSystemTool } from "./tools/fileSystem";
 import { systemControlTool } from "./tools/systemControl";
+import { computerControlTool } from "./tools/computerControl";
 import { claudeClient } from "./lib/claude";
 import { analyticsService } from './lib/analytics';
 import { db } from "../db";
@@ -12,12 +13,13 @@ import { toolPermissions } from "../db/schema";
 import { eq } from "drizzle-orm";
 import { setUserRole, checkToolAccess } from './middleware/auth';
 
-const tools: Tool[] = [fileSystemTool, systemControlTool];
+const tools: Tool[] = [fileSystemTool, systemControlTool, computerControlTool];
 let systemConfig = {
   systemMessage: `You are a helpful AI assistant with access to various system tools.
 Available tools:
 - fileSystem: Perform file system operations (read, write, list, delete files)
 - systemControl: Execute system commands (ps, df, free, uptime)
+- computerControl: Execute computer commands using natural language (e.g. "Show running processes", "Show disk space")
 
 When you need to use a tool, format your response like this:
 To use fileSystem: <tool>fileSystem:{"operation": "read", "path": "/example.txt"}</tool>

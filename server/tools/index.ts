@@ -1,12 +1,14 @@
 import { Tool } from '../../client/src/lib/types';
 import { fileSystemTool } from './fileSystem';
 import { systemControlTool } from './systemControl';
+import { computerControlTool } from './computerControl';
 import { analyticsService } from '../lib/analytics';
 import { checkToolPermission } from '../middleware/auth';
 
 export const tools: Tool[] = [
   fileSystemTool,
-  systemControlTool
+  systemControlTool,
+  computerControlTool
 ];
 
 export async function executeToolCall(name: string, args: Record<string, any>, userRole: string = 'user') {
@@ -25,14 +27,27 @@ export async function executeToolCall(name: string, args: Record<string, any>, u
   let toolCall;
 
   try {
-    const result = await tool.execute(args);
+    if (!tool.execute) {
+      throw new Error(`Tool "${name}" does not have an execute function`);
+    }
+    
+    // Create toolCall object first to track the execution
     toolCall = {
       id: crypto.randomUUID(),
       name,
       args,
+      status: 'pending' as const
+    };
+
+    const result = await tool.execute(args);
+    
+    // Update toolCall with success status and result
+    toolCall = {
+      ...toolCall,
       status: 'success' as const,
       result
     };
+    
     return result;
   } catch (error) {
     toolCall = {
