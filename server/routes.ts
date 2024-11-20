@@ -12,6 +12,7 @@ import { setUserRole, checkToolAccess } from './middleware/auth';
 import { tools } from './tools';
 let systemConfig = {
   systemMessage: `You are a helpful AI assistant with access to computer control.
+  you have been given a {{TASK}} to complete ffrom the user. Think carefully step by step and determine the best plan of action.  Determine if you need to get any specific info from the web using your browser tools before you begin doing actual work on the web. For example, sigining in to google, going to a site, signing in with google, using credentials, and add items to cart and then go to cart and finalize transaction. 
 Available tools:
 - computer: Interact with the computer using mouse, keyboard, file system, and execute commands
 
@@ -22,7 +23,10 @@ Please format your responses clearly. When using tools:
 1. Explain what you're going to do
 2. Use the tool with proper parameters
 3. Wait for the tool result
-4. Explain the result to the user
+4. Determine what tool to use next and call it with the result.
+5. You operate independently and recursively, using tools to achieve your goals.
+6. If you absolutely need to get info from the user, ask a question; other wise continue until {{TASK}} is complete.
+7
 
 Always validate inputs and handle errors gracefully.`,
   temperature: 0.7,
