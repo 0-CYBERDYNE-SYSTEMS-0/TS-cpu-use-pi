@@ -1,7 +1,9 @@
 import { promises as fs } from 'fs';
 import { Tool } from '../../client/src/lib/types';
 
-export const fileSystemTool: Tool = {
+import { registerTool } from './loader';
+
+const fileSystemTool: Tool = {
   name: 'fileSystem',
   description: 'Perform file system operations',
   enabled: true,
@@ -35,3 +37,6 @@ export const fileSystemTool: Tool = {
     }
   }
 };
+
+// Export the tool
+export { fileSystemTool };

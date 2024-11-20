@@ -3,17 +3,13 @@ import { WebSocketServer } from "ws";
 import { Server } from "http";
 import { handleWebSocket } from "./websocket";
 import { Tool, ToolPermission } from "../client/src/lib/types";
-import { fileSystemTool } from "./tools/fileSystem";
-import { systemControlTool } from "./tools/systemControl";
-import { computerControlTool } from "./tools/computerControl";
 import { claudeClient } from "./lib/claude";
 import { analyticsService } from './lib/analytics';
 import { db } from "../db";
 import { toolPermissions } from "../db/schema";
 import { eq } from "drizzle-orm";
 import { setUserRole, checkToolAccess } from './middleware/auth';
-
-const tools: Tool[] = [fileSystemTool, systemControlTool, computerControlTool];
+import { tools } from './tools';
 let systemConfig = {
   systemMessage: `You are a helpful AI assistant with access to various system tools.
 Available tools:
@@ -111,6 +107,21 @@ export function registerRoutes(app: Express, server: Server) {
       });
     }
   });
+
+  // Development-only route for seeding tool executions
+  if (app.get('env') === 'development') {
+    app.post("/api/tools/seed", async (req, res) => {
+      try {
+        await seedToolExecutions();
+        res.json({ message: 'Tool executions seeded successfully' });
+      } catch (error) {
+        console.error('Seeding error:', error);
+        res.status(500).json({ 
+          error: error instanceof Error ? error.message : 'Failed to seed tool executions' 
+        });
+      }
+    });
+  }
 
   // Tool management endpoints
   app.get("/api/tools", async (req, res) => {

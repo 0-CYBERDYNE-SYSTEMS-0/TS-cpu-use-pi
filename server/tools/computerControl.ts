@@ -7,7 +7,9 @@ const execAsync = promisify(exec);
 
 const SAFE_COMMANDS = ['ps', 'ls', 'pwd', 'whoami', 'df', 'free', 'uptime', 'date', 'cal'];
 
-export const computerControlTool: Tool = {
+import { registerTool } from './loader';
+
+const computerControlTool: Tool = {
   name: 'computerControl',
   description: 'Execute computer commands with natural language interpretation',
   enabled: true,
@@ -44,3 +46,6 @@ export const computerControlTool: Tool = {
     }
   }
 };
+
+// Export the tool
+export { computerControlTool };

@@ -4,7 +4,9 @@ import { Tool } from '../../client/src/lib/types';
 
 const execAsync = promisify(exec);
 
-export const systemControlTool: Tool = {
+import { registerTool } from './loader';
+
+const systemControlTool: Tool = {
   name: 'systemControl',
   description: 'Execute system commands and get system information',
   enabled: true,
@@ -23,3 +25,6 @@ export const systemControlTool: Tool = {
     }
   }
 };
+
+// Export the tool
+export { systemControlTool };

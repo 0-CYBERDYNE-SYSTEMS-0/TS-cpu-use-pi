@@ -1,15 +1,35 @@
-import { Tool } from '../../client/src/lib/types';
+import type { Tool } from '../../client/src/lib/types';
+import { analyticsService } from '../lib/analytics';
+import { checkToolPermission } from '../middleware/auth';
+import { getAllTools, findTool, registerTool } from './loader';
 import { fileSystemTool } from './fileSystem';
 import { systemControlTool } from './systemControl';
 import { computerControlTool } from './computerControl';
-import { analyticsService } from '../lib/analytics';
-import { checkToolPermission } from '../middleware/auth';
 
-export const tools: Tool[] = [
-  fileSystemTool,
-  systemControlTool,
-  computerControlTool
-];
+// Initialize tools array
+const tools: Tool[] = [];
+
+// Register tools
+function initializeTools() {
+  try {
+    registerTool(fileSystemTool);
+    registerTool(systemControlTool);
+    registerTool(computerControlTool);
+    
+    // Update tools array with registered tools
+    const registeredTools = getAllTools();
+    tools.length = 0; // Clear existing array
+    tools.push(...registeredTools);
+  } catch (error) {
+    console.error('Failed to register tools:', error);
+  }
+}
+
+// Initialize tools before export
+initializeTools();
+
+// Export initialized tools
+export { tools };
 
 export async function executeToolCall(name: string, args: Record<string, any>, userRole: string = 'user') {
   const tool = tools.find(t => t.name === name);
@@ -92,7 +112,7 @@ async function seedToolExecutions() {
   console.log('Tool execution seeding completed');
 }
 
-// Call seedToolExecutions when the module is loaded
-seedToolExecutions().catch(error => {
-  console.error('Failed to seed tool executions:', error);
-});
+// Export is already done at the top of the file
+
+// Export the seeding function instead of running it immediately
+export { seedToolExecutions };

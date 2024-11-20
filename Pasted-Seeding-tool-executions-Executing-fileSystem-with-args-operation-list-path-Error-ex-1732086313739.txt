@@ -1,0 +1,44 @@
+Seeding tool executions...
+Executing fileSystem with args: { operation: 'list', path: '.' }
+Error executing fileSystem: Error: Tool "fileSystem" not found or disabled
+    at executeToolCall (/home/runner/workspace/server/tools/index.ts:21:11)
+    at seedToolExecutions (/home/runner/workspace/server/tools/index.ts:90:13)
+    at <anonymous> (/home/runner/workspace/server/tools/index.ts:102:1)
+    at ModuleJob.run (node:internal/modules/esm/module_job:222:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:316:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:123:5)
+Executing systemControl with args: { command: 'ps' }
+Error executing systemControl: Error: Tool "systemControl" not found or disabled
+    at executeToolCall (/home/runner/workspace/server/tools/index.ts:21:11)
+    at seedToolExecutions (/home/runner/workspace/server/tools/index.ts:90:13)
+Executing fileSystem with args: { operation: 'read', path: '/nonexistent' }
+Error executing fileSystem: Error: Tool "fileSystem" not found or disabled
+    at executeToolCall (/home/runner/workspace/server/tools/index.ts:21:11)
+    at seedToolExecutions (/home/runner/workspace/server/tools/index.ts:90:13)
+Executing systemControl with args: { command: 'invalid' }
+Error executing systemControl: Error: Tool "systemControl" not found or disabled
+    at executeToolCall (/home/runner/workspace/server/tools/index.ts:21:11)
+    at seedToolExecutions (/home/runner/workspace/server/tools/index.ts:90:13)
+Tool execution seeding completed
+Re-optimizing dependencies because lockfile has changed
+07:04:24 AM [express] serving on port 5000
+7:04:24 AM [tsx] unlink in ./vite.config.ts.timestamp-1732086264425-727f99dc51e3.mjs Restarting...
+Seeding tool executions...
+Executing fileSystem with args: { operation: 'list', path: '.' }
+Error executing fileSystem: Error: Tool "fileSystem" not found or disabled
+    at executeToolCall (/home/runner/workspace/server/tools/index.ts:21:11)
+    at seedToolExecutions (/home/runner/workspace/server/tools/index.ts:90:13)
+    at <anonymous> (/home/runner/workspace/server/tools/index.ts:102:1)
+    at ModuleJob.run (node:internal/modules/esm/module_job:222:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:316:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:123:5)
+Executing systemControl with args: { command: 'ps' }
+Error executing systemControl: Error: Tool "systemControl" not found or disabled
+    at executeToolCall (/home/runner/workspace/server/tools/index.ts:21:11)
+    at seedToolExecutions (/home/runner/workspace/server/tools/index.ts:90:13)
+Executing fileSystem with args: { operation: 'read', path: '/nonexistent' }
+Error executing fileSystem: Error: Tool "fileSystem" not found or disabled
+    at executeToolCall (/home/runner/workspace/server/tools/index.ts:21:11)
+    at seedToolExecutions (/home/runner/workspace/server/tools/index.ts:90:13)
+Executing systemControl with args: { command: 'invalid' }
+Error executing systemControl: Error: Tool "systemControl" not found or disab
