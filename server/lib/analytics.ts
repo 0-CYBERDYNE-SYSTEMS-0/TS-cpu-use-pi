@@ -5,6 +5,10 @@ import type { Tool, ToolCall } from "../../client/src/lib/types";
 
 export class AnalyticsService {
   async trackToolExecution(toolCall: ToolCall, startTime: number) {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Development mode: Skipping analytics tracking');
+      return;
+    }
     const endTime = Date.now();
     const executionTimeMs = endTime - startTime;
 
@@ -60,10 +64,16 @@ export class AnalyticsService {
   }
 
   async getToolStats() {
+    if (process.env.NODE_ENV === 'development') {
+      return [];
+    }
     return db.select().from(toolStats);
   }
 
-  async getRecentExecutions(limit = 100) {
+  async getRecentExecutions(limit: number = 100) {
+    if (process.env.NODE_ENV === 'development') {
+      return [];
+    }
     return db
       .select()
       .from(toolExecutions)

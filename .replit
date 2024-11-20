@@ -8,10 +8,10 @@ channel = "stable-24_05"
 [deployment]
 deploymentTarget = "cloudrun"
 build = ["npm", "run", "build"]
-run = ["sh", "-c", "NODE_ENV=development PORT=5000 VITE_DEV_SERVER_URL=http://0.0.0.0:5000 tsx watch --ignore 'vite.config.ts.*' --ignore '**/vite.config.ts.*' --clear-screen=false server/index.ts"]
+run = ["sh", "-c", "NODE_ENV=development PORT=5001 VITE_DEV_SERVER_URL=http://0.0.0.0:5001 tsx watch --ignore 'vite.config.ts.*' --ignore '**/vite.config.ts.*' --clear-screen=false server/index.ts"]
 
 [[ports]]
-localPort = 5000
+localPort = 5001
 externalPort = 80
 
 [packager]
@@ -51,5 +51,10 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "NODE_ENV=development PORT=5000 VITE_DEV_SERVER_URL=http://0.0.0.0:5000 tsx watch --ignore 'vite.config.ts.*' --ignore '**/vite.config.ts.*' --clear-screen=false server/index.ts"
-waitForPort = 5000
+args = "NODE_ENV=development PORT=5001 VITE_DEV_SERVER_URL=http://0.0.0.0:5001 tsx watch --ignore 'vite.config.ts.*' --ignore '**/vite.config.ts.*' --clear-screen=false server/index.ts"
+waitForPort = 5001
+
+[env]
+PORT = "5001"
+NODE_ENV = "development"
+VITE_DEV_SERVER_URL = "http://0.0.0.0:5001"

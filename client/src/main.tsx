@@ -12,8 +12,11 @@ import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { wsClient } from "./lib/websocket";
 import { ConnectionStatus } from "@/components/ui/connection-status";
 
-// Initialize WebSocket connection
-wsClient.connect();
+// Initialize WebSocket connection with retry limit
+wsClient.connect({
+  maxRetries: 3,
+  retryInterval: 2000
+});
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

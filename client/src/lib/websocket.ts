@@ -10,24 +10,21 @@ class WebSocketClient {
   private toolCallHandlers: Set<ToolCallHandler> = new Set();
   private connectionHandlers: Set<ConnectionHandler> = new Set();
   private reconnectAttempts = 0;
-  private maxReconnectDelay = 5000;
+  private maxRetries = 3;
+  private retryInterval = 2000;
   private connected = false;
 
-  connect() {
+  connect(options?: { maxRetries?: number; retryInterval?: number }) {
     if (this.ws?.readyState === WebSocket.OPEN) return;
-
+    
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host;
-    const wsUrl = `${protocol}//${host}/ws`;
-
-    console.log('Connecting to WebSocket:', wsUrl);
-    this.ws = new WebSocket(wsUrl);
+    const port = '5001';
+    this.ws = new WebSocket(`${protocol}//${window.location.hostname}:${port}/ws`);
 
     this.ws.onopen = () => {
       this.connected = true;
       this.reconnectAttempts = 0;
       this.notifyConnectionStatus(true);
-      console.log('WebSocket connected');
     };
 
     this.ws.onmessage = (event) => {
@@ -47,26 +44,16 @@ class WebSocketClient {
       if (this.connected) {
         this.connected = false;
         this.notifyConnectionStatus(false);
-        console.log('WebSocket disconnected');
+        if (this.reconnectAttempts < this.maxRetries) {
+          setTimeout(() => this.connect(), this.retryInterval);
+        }
       }
-      this.reconnect();
     };
 
     this.ws.onerror = (error) => {
       console.error('WebSocket error:', error);
       this.ws?.close();
     };
-  }
-
-  private reconnect() {
-    const delay = Math.min(
-      1000 * Math.pow(2, this.reconnectAttempts),
-      this.maxReconnectDelay
-    );
-    this.reconnectAttempts++;
-    
-    console.log(`Attempting to reconnect in ${delay}ms...`);
-    setTimeout(() => this.connect(), delay);
   }
 
   private notifyConnectionStatus(status: boolean) {
@@ -93,5 +80,4 @@ class WebSocketClient {
   }
 }
 
-export { WebSocketClient };
 export const wsClient = new WebSocketClient();

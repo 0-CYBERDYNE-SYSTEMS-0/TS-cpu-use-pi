@@ -125,32 +125,18 @@ export function clearTools() {
 
 // Register built-in tools
 registerTool({
-  name: 'fileSystem',
-  description: 'Perform file system operations',
+  name: 'computer',
+  description: 'Interact with the computer using mouse, keyboard, file system, and execute commands',
   enabled: true,
   parameters: {
-    operation: {
+    action: {
       type: 'string',
-      enum: ['read', 'write', 'list', 'delete']
+      description: 'The action to perform'
     },
-    path: {
-      type: 'string'
-    },
-    content: {
-      type: 'string',
-      optional: true
-    }
-  }
-});
-
-registerTool({
-  name: 'systemControl',
-  description: 'Execute system commands and get system information',
-  enabled: true,
-  parameters: {
-    command: {
-      type: 'string',
-      enum: ['ps', 'df', 'free', 'uptime']
+    parameters: {
+      type: 'object',
+      optional: true,
+      description: 'Additional parameters for the action'
     }
   }
 });

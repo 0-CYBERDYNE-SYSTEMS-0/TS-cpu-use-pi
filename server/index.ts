@@ -3,7 +3,6 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic } from "./vite";
 import { createServer } from "http";
 import { seedToolExecutions } from "./tools";
-import { WebSocketServer } from 'ws';
 
 const app = express();
 
@@ -33,15 +32,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Update CORS and security headers
-app.use((req, res, next) => {
-  // Allow iframe embedding from Replit domains
-  res.header('X-Frame-Options', 'ALLOW-FROM https://*.replit.dev');
-  // Set Content Security Policy
-  res.header('Content-Security-Policy', "frame-ancestors 'self' https://*.replit.dev");
-  next();
-});
-
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
   // Don't exit the process, just log the error
@@ -55,8 +45,6 @@ process.on('unhandledRejection', (err) => {
 (async () => {
   try {
     const server = createServer(app);
-    
-    
     
     // Setup routes before Vite middleware
     registerRoutes(app, server);
@@ -80,7 +68,21 @@ process.on('unhandledRejection', (err) => {
     }
 
     // Server startup
-    const PORT = parseInt(process.env.PORT || '5000', 10);
+    const findAvailablePort = async (startPort: number): Promise<number> => {
+      const net = await import('net');
+      return new Promise((resolve) => {
+        const server = net.createServer();
+        server.listen(startPort, '0.0.0.0', () => {
+          const { port } = server.address() as net.AddressInfo;
+          server.close(() => resolve(port));
+        });
+        server.on('error', () => {
+          resolve(findAvailablePort(startPort + 1));
+        });
+      });
+    };
+
+    const PORT = await findAvailablePort(Number(process.env.PORT) || 5000);
     const HOST = '0.0.0.0';
 
     await new Promise<void>((resolve, reject) => {

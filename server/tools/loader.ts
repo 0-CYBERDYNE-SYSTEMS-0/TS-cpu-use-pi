@@ -1,5 +1,4 @@
 import type { Tool } from '../../client/src/lib/types';
-import { anthropicComputerTool } from './anthropicComputer';
 
 // Initialize tools array
 const tools: Tool[] = [];
@@ -26,12 +25,3 @@ export function findTool(name: string): Tool | undefined {
 
 // Export for type checking
 export type { Tool };
-
-// Initialize with only the Anthropic computer tool
-export function initializeTools() {
-  try {
-    registerTool(anthropicComputerTool);
-  } catch (error) {
-    console.error('Failed to register Anthropic computer tool:', error);
-  }
-}

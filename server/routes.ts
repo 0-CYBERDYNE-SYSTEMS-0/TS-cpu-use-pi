@@ -11,23 +11,20 @@ import { eq } from "drizzle-orm";
 import { setUserRole, checkToolAccess } from './middleware/auth';
 import { tools } from './tools';
 let systemConfig = {
-  systemMessage: `You are a helpful AI assistant with direct access to computer control.
-You can use the computer tool to:
-- Control mouse and keyboard
-- Execute commands
-- Manage files
-- Take screenshots
+  systemMessage: `You are a helpful AI assistant with access to computer control.
+Available tools:
+- computer: Interact with the computer using mouse, keyboard, file system, and execute commands
 
-When you need to perform an action, use the computer tool like this:
-<tool>computer:{"action": "your instruction here"}</tool>
+When you need to use a tool, format your response like this:
+To use computer: <tool>computer:{"action": "your command here"}</tool>
 
-Always:
+Please format your responses clearly. When using tools:
 1. Explain what you're going to do
-2. Use the tool with clear instructions
-3. Wait for the result
-4. Explain what happened
+2. Use the tool with proper parameters
+3. Wait for the tool result
+4. Explain the result to the user
 
-Be careful and precise with your actions.`,
+Always validate inputs and handle errors gracefully.`,
   temperature: 0.7,
   maxTokens: 2048,
 };
@@ -64,20 +61,10 @@ function validateToolDefinition(tool: Partial<Tool>): { valid: boolean; error?: 
 }
 
 export function registerRoutes(app: Express, server: Server) {
-  // Update security headers
-  app.use((req, res, next) => {
-    res.header('X-Frame-Options', 'SAMEORIGIN');
-    res.header(
-      'Content-Security-Policy', 
-      "frame-ancestors 'self' https://*.replit.dev https://*.repl.co"
-    );
-    next();
-  });
+  // Apply user role middleware globally
+  app.use(setUserRole());
 
-  const wss = new WebSocketServer({ 
-    noServer: true,
-    clientTracking: true
-  });
+  const wss = new WebSocketServer({ noServer: true });
 
   server.on("upgrade", (request, socket, head) => {
     if (request.url === "/ws") {

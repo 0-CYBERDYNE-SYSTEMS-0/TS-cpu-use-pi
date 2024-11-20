@@ -6,29 +6,20 @@ const clients = new Set<WebSocket>();
 export function handleWebSocket(ws: WebSocket) {
   clients.add(ws);
 
-  // Send initial connection success message
   ws.send(JSON.stringify({ type: 'connection', status: 'connected' }));
 
-  ws.on('error', (error) => {
-    console.error('WebSocket error:', error);
-    clients.delete(ws);
-  });
-
-  ws.on('close', () => {
-    clients.delete(ws);
-  });
-
-  // Ping to keep connection alive
   const pingInterval = setInterval(() => {
-    if (ws.readyState === ws.OPEN) {
+    if (ws.readyState === WebSocket.OPEN) {
       ws.ping();
     } else {
       clearInterval(pingInterval);
+      clients.delete(ws);
     }
   }, 30000);
 
-  ws.on('pong', () => {
-    // Connection is alive
+  ws.on('close', () => {
+    clearInterval(pingInterval);
+    clients.delete(ws);
   });
 }
 
