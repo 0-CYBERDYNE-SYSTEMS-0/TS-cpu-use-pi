@@ -290,4 +290,15 @@ export function registerRoutes(app: Express, server: Server) {
       });
     }
   });
+
+  systemConfig.systemMessage += `
+Computer use is enabled in a controlled Docker environment.
+Display resolution: 1024x768
+Available actions:
+- browse: Open URLs in Firefox
+- click: Move mouse and click at coordinates
+- type: Type text using keyboard
+- execute: Run shell commands (restricted)
+
+Always verify actions before execution and report results.`;
 }

@@ -18,7 +18,7 @@ class WebSocketClient {
     if (this.ws?.readyState === WebSocket.OPEN) return;
     
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const port = '5001';
+    const port = '8080';
     this.ws = new WebSocket(`${protocol}//${window.location.hostname}:${port}/ws`);
 
     this.ws.onopen = () => {

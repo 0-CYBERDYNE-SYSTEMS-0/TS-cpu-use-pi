@@ -1,22 +1,51 @@
 import { Tool } from '../../client/src/lib/types';
 import { anthropic } from '../lib/claude';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
+
+// Tool implementations that Claude expects
+const computerTools = {
+  async browse({ url }: { url: string }) {
+    try {
+      await execAsync(`DISPLAY=:0 firefox "${url}"`);
+      return { type: 'browse', status: 'success', url };
+    } catch (error) {
+      throw new Error(`Failed to browse URL: ${error.message}`);
+    }
+  },
+  
+  async click({ x, y }: { x: number, y: number }) {
+    try {
+      await execAsync(`DISPLAY=:0 xdotool mousemove ${x} ${y} click 1`);
+      return { type: 'click', status: 'success', coordinates: { x, y } };
+    } catch (error) {
+      throw new Error(`Failed to click: ${error.message}`);
+    }
+  },
+  
+  async type({ text }: { text: string }) {
+    try {
+      await execAsync(`DISPLAY=:0 xdotool type "${text}"`);
+      return { type: 'type', status: 'success', text };
+    } catch (error) {
+      throw new Error(`Failed to type text: ${error.message}`);
+    }
+  }
+};
 
 const anthropicComputerTool: Tool = {
   name: 'computer',
-  description: 'Interact with the computer using mouse, keyboard, file system, and execute commands',
+  description: 'Interact with the computer using mouse, keyboard, and browser',
   enabled: true,
   parameters: {
     action: {
       type: 'string',
       description: 'The action to perform'
-    },
-    parameters: {
-      type: 'object',
-      optional: true,
-      description: 'Additional parameters for the action'
     }
   },
-  async execute({ action, parameters }) {
+  async execute({ action }) {
     try {
       if (!process.env.ANTHROPIC_API_KEY) {
         throw new Error('ANTHROPIC_API_KEY not configured');
@@ -26,7 +55,6 @@ const anthropicComputerTool: Tool = {
         model: 'claude-3-5-sonnet-20241022',
         max_tokens: 1024,
         temperature: 0.7,
-        system: "You are a helpful computer control assistant.",
         messages: [{
           role: 'user',
           content: action
@@ -40,20 +68,20 @@ const anthropicComputerTool: Tool = {
         }]
       });
 
-      if (!response.content || !response.content[0]?.text) {
-        throw new Error('Invalid response from Claude API');
+      if (response.stop_reason === 'tool_use') {
+        const toolCall = response.tool_calls[0];
+        // Map the tool call to our local implementation
+        const toolName = toolCall.parameters.type || toolCall.name;
+        const result = await computerTools[toolName](toolCall.parameters);
+        return result;
       }
 
-      return response.content[0].text;
+      return response.content[0]?.text || 'No response from Claude';
     } catch (error) {
       if (error.status === 401) {
         throw new Error('Authentication failed: Invalid API key');
       } else if (error.status === 403) {
         throw new Error('Authorization failed: Computer use not enabled for this API key');
-      } else if (error.name === 'AbortError') {
-        throw new Error('Request timed out while executing computer action');
-      } else if (error instanceof TypeError) {
-        throw new Error(`Invalid parameters: ${error.message}`);
       } else {
         throw new Error(`Computer action failed: ${error.message || 'Unknown error'}`);
       }

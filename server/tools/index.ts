@@ -10,12 +10,24 @@ const tools: Tool[] = [];
 // Register tools
 function initializeTools() {
   try {
+    // Check environment
+    if (!process.env.COMPUTER_USE_ENABLED) {
+      console.warn('Computer use is disabled. Set COMPUTER_USE_ENABLED=true to enable.');
+      return;
+    }
+
+    if (process.env.NODE_ENV === 'production' && !process.env.DOCKER_CONTAINER) {
+      console.error('Computer use must run in Docker container in production');
+      return;
+    }
+
     registerTool(anthropicComputerTool);
     
-    // Update tools array with registered tools
     const registeredTools = getAllTools();
-    tools.length = 0; // Clear existing array
+    tools.length = 0;
     tools.push(...registeredTools);
+
+    console.log('Computer use tools initialized successfully');
   } catch (error) {
     console.error('Failed to register tools:', error);
   }

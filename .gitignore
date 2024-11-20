@@ -12,3 +12,6 @@ vite.config.ts.*
 
 # Keep example env
 !.env.example
+
+# Logs
+*.log

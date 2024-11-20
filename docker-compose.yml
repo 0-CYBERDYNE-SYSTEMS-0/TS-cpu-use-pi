@@ -1,0 +1,26 @@
+version: '3.8'
+services:
+  computer-control:
+    build: .
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - ANTHROPIC_VERSION=${ANTHROPIC_VERSION}
+      - ANTHROPIC_BETA=${ANTHROPIC_BETA}
+      - DATABASE_URL=${DATABASE_URL}
+      - PGDATABASE=${PGDATABASE}
+      - PGHOST=${PGHOST}
+      - PGPORT=${PGPORT}
+      - PGUSER=${PGUSER}
+      - PGPASSWORD=${PGPASSWORD}
+      - DISPLAY=:0
+    ports:
+      - "3000:3000"  # API
+      - "5900:5900"  # VNC
+      - "6080:6080"  # noVNC web interface
+    volumes:
+      - .:/app
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - seccomp=unconfined

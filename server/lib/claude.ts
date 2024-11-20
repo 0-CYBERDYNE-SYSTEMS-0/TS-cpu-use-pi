@@ -10,6 +10,15 @@ const anthropic = new Anthropic({
   }
 });
 
+// Add computer use system prompt
+export const DEFAULT_SYSTEM_PROMPT = `You are a helpful AI assistant with access to computer control capabilities. You can:
+- Use the mouse and keyboard
+- Navigate web pages
+- Read and write files
+- Execute terminal commands
+
+Always confirm before taking destructive actions.`;
+
 export { anthropic };
 
 interface ConversationContext {
