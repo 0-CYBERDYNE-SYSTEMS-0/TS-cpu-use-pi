@@ -14,4 +14,4 @@ vite.config.ts.*
 !.env.example
 
 # Logs
-*.log
+*.log.env
